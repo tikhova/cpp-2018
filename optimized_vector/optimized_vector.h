@@ -42,7 +42,7 @@ public:
     // Construtors and destructor
     optimized_vector();
     optimized_vector(size_t, value_type);
-    optimized_vector(optimized_vector const &);
+    optimized_vector(optimized_vector const &) noexcept;
     ~optimized_vector() /*= default*/;
 
     // Operators

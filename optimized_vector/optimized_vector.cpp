@@ -24,7 +24,7 @@ optimized_vector::optimized_vector(size_t n, value_type x) : size_(n) {
     }
 }
 
-optimized_vector::optimized_vector(optimized_vector const & x) : size_(x.size_) {
+optimized_vector::optimized_vector(optimized_vector const & x) noexcept : size_(x.size_) {
     if (is_small()) {
         data_ptr_ = value_.small;
         for(size_t i = 0; i != size_; ++i) {
