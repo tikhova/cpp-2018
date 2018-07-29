@@ -7,6 +7,7 @@
 #include <cstdint> // limits of int types
 #include <limits>  // numeric_limits
 #include <cmath>   // pow
+#include "../../../optimized_vector/optimized_vector.h"
 
 class big_integer {
 private:
@@ -16,7 +17,7 @@ private:
 
 private:
         int sign;
-        std::vector<digit_t> value;
+        optimized_vector value;
         static constexpr int BITS_AMOUNT = std::numeric_limits<digit_t>::digits;
         static constexpr int DIGITS_AMOUNT = std::numeric_limits<digit_t>::digits10;
         static constexpr digit_t MAX_DIGIT = std::numeric_limits<digit_t>::max();

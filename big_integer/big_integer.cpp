@@ -142,7 +142,7 @@ big_integer& big_integer::operator-=(big_integer const & x) {
 big_integer& big_integer::operator*=(big_integer const & x) {
     this->sign = sign * x.sign;
     if (this->sign == 0) {                      // if one of the operands is zero
-        this->value = vector<digit_t>(1, 0);
+        this->value = optimized_vector(1, 0);
     } else {
         mul_value(*this, *this, x);
     }
@@ -221,7 +221,7 @@ big_integer& big_integer::operator>>=(unsigned int n) {
         *this -= 1;
     }
 
-    vector<digit_t> result;
+    optimized_vector result;
     size_t full_blocks = 0;
     unsigned int shift = n;
 
@@ -262,7 +262,7 @@ big_integer& big_integer::operator<<=(unsigned int n) {
         return *this;
     }
 
-    vector<digit_t> result;
+    optimized_vector result;
     size_t full_blocks = 0;
     unsigned int shift = n;
 
@@ -381,11 +381,11 @@ int compare_abs_value(big_integer const & x, big_integer const & y) {
 
 string insert_leading_zeroes(string const & s) {
     string res;
-    int n = big_integer::DIGITS_AMOUNT - s.length();
+    size_t n = big_integer::DIGITS_AMOUNT - s.length();
     if (n > 0) {
         res = string(n, '0');
-        res.append(s);
     }
+    res.append(s);
     return res;
 }
 
@@ -459,8 +459,8 @@ void add_value(big_integer& result, big_integer const & x, big_integer const & y
     size_t i;
     size_t longer_size = longer.value.size();
     size_t shorter_size = shorter.value.size();
-    for (i = -1; ++i != shorter_size;
-         add_with_carry(longer.value[i], shorter.value[i],  carry));
+    for (i = 0; i != shorter_size;
+         add_with_carry(longer.value[i], shorter.value[i],  carry), ++i);
 
     while (carry != 0) {
         if (i != longer_size) {
@@ -486,8 +486,8 @@ void sub_value(big_integer& result, big_integer const & x, big_integer const & y
     size_t i;
     size_t longer_size = longer.value.size();
     size_t shorter_size = shorter.value.size();
-    for (i = -1; ++i != shorter_size;
-         sub_with_carry(longer.value[i], shorter.value[i], carry));
+    for (i = 0; i != shorter_size;
+         sub_with_carry(longer.value[i], shorter.value[i], carry), ++i);
 
     while (carry != 0) {
         if (i != longer_size) {
@@ -514,7 +514,7 @@ void mul_value(big_integer& result, big_integer const & x, big_integer const & y
     for (size_t i = 0; i != n; ++i) {
         carry = 0;
         for (size_t j = 0; j != m; ++j) {
-            d = (double_digit_t)x.value[i] * y.value[j] + carry + res.value[i + j];
+            d = (double_digit_t)x.value[i] * (double_digit_t)y.value[j] + carry + res.value[i + j];
             res.value[i + j] = low(d);
             carry = high(d);
         }
@@ -614,12 +614,12 @@ pair<big_integer, big_integer> div_value(big_integer const & x, big_integer cons
 //// Logic
 template <class F> // TO DO: Fix strange transform(?) usages
 big_integer big_integer::logic_operation(big_integer a, big_integer b, F lambda) { // TO DO: comment the shit out of it
-    vector<digit_t> temp;
+    optimized_vector temp;
 
     if (a.sign == -1) {
-        transform(a.value.begin(), a.value.end(), back_inserter(temp), bit_not<digit_t>());
+        transform(a.value.begin(), a.value.end(), std::back_inserter(temp), bit_not<digit_t>());
         a.value = temp;
-        temp = vector<digit_t>();
+        temp = optimized_vector();
         a.sign = 1;
         a += 1;
     } else {
@@ -627,9 +627,9 @@ big_integer big_integer::logic_operation(big_integer a, big_integer b, F lambda)
     }
 
     if (b.sign == -1) {
-        transform(b.value.begin(), b.value.end(), back_inserter(temp), bit_not<digit_t>());
+        transform(b.value.begin(), b.value.end(), std::back_inserter(temp), bit_not<digit_t>());
         b.value = temp;
-        temp = vector<digit_t>();
+        temp = optimized_vector();
         b.sign = 1;
         b += 1;
     } else {
@@ -649,9 +649,9 @@ big_integer big_integer::logic_operation(big_integer a, big_integer b, F lambda)
     }
 
     if(a.sign == 1) {
-        transform(a.value.begin(), a.value.end(), back_inserter(temp), bit_not<digit_t>());
+        transform(a.value.begin(), a.value.end(), std::back_inserter(temp), bit_not<digit_t>());
         a.value = temp;
-        temp = vector<digit_t>();
+        temp = optimized_vector();
         a += 1;
         a.sign = -1;
     } else {
