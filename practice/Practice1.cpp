@@ -6,11 +6,11 @@
 #include <iostream>
 using namespace std;
 
-const int SIZE = 10; //the size of the buffer
-int alreadyRead = 0; //[times we wrote to buffer] x [buffer size]
-int previous = 0; //the value of prefix function for the last index of previous buffer
+const int SIZE = 10; // the size of the buffer
+int alreadyRead = 0; // [times we wrote to buffer] x [buffer size]
+int previous = 0; // the value of prefix function for the last index of previous buffer
 
-//Simple prefix function
+// Simple prefix function
 int* prefixFunction(char* s) {
 	int s_length = strlen(s);
 	int* p = new int[s_length];
@@ -26,7 +26,7 @@ int* prefixFunction(char* s) {
 	return p;
 }
 
-//KMP that prints index every time it finds occurense
+// KMP that prints index every time it finds occurrence
 void kmp(char* s, char* w) {
 	int s_length = SIZE;
 	int w_length = strlen(w);
