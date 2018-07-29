@@ -7,6 +7,7 @@
 #include <cstdint> // limits of int types
 #include <limits>  // numeric_limits
 #include <cmath>   // pow
+#include "../../../optimized_vector/optimized_vector.h"
 
 class big_integer {
 private:
@@ -16,7 +17,7 @@ private:
 
 private:
         int sign;
-        std::vector<digit_t> value;
+        optimized_vector value;
         static constexpr int BITS_AMOUNT = std::numeric_limits<digit_t>::digits;
         static constexpr int DIGITS_AMOUNT = std::numeric_limits<digit_t>::digits10;
         static constexpr digit_t MAX_DIGIT = std::numeric_limits<digit_t>::max();
@@ -42,7 +43,7 @@ private:
         //// Long division
         friend digit_t trial(big_integer const &, big_integer const &, const size_t&, const size_t&);
         friend bool smaller(big_integer const &, big_integer const &, const size_t&, const size_t&);
-        friend std::pair<big_integer, big_integer> div_value(/*big_integer&, big_integer&, */big_integer const &, big_integer const &);
+        friend std::pair<big_integer, big_integer> div_value(big_integer const &, big_integer const &);
         //// Logic
         template <class F>
         static big_integer logic_operation(big_integer a, big_integer b, F lambda);
@@ -80,7 +81,9 @@ public:
         friend big_integer operator%(big_integer const &, big_integer const &);
 
         big_integer& operator++();
+        big_integer operator++(int);
         big_integer& operator--();
+        big_integer operator--(int);
 
         big_integer operator-() const;
         big_integer operator+() const;
