@@ -7,32 +7,28 @@ using std::pair;
 using std::vector;
 using std::multimap;
 
-counter::counter() {
-    count.reserve(SYMBOLS_AMOUNT);
-    for (size_t i = 0; i != SYMBOLS_AMOUNT; ++i) {
-        count.push_back(0);
-    }
+counter::counter() : count(SYMBOLS_AMOUNT, 0){}
+
+void counter::add(unsigned char const c) {
+    ++count.at(c);
+    ++LENGTH;
 }
 
-void counter::add(char const c) {
-    ++count.at(static_cast<unsigned char>(c));
-}
-
-void counter::add(vector<char> const & a) {
+void counter::add(vector<unsigned char> const & a) {
     for (auto c: a) {
         add(c);
     }
 }
 
-size_t counter::get_count(char const c) {
-    return count.at(static_cast<unsigned char>(c));
+size_t counter::get_count(unsigned char const c) {
+    return count.at(c);
 }
 
-multimap<size_t, unsigned char> counter::get() {
-    multimap<size_t, unsigned char> result;
+multimap<size_t, size_t> counter::get() {
+    multimap<size_t, size_t> result;
     for (size_t i = 0; i != SYMBOLS_AMOUNT; ++i) {
         if (count.at(i)) {
-            result.insert(pair<size_t, unsigned char>(count.at(i), static_cast<unsigned char>(i)));
+            result.insert(pair<size_t, size_t>(count.at(i), i));
         }
     }
     return result;

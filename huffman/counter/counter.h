@@ -9,16 +9,16 @@
 class counter {
 private:
     static constexpr size_t SYMBOLS_AMOUNT = 256;
-    //uintmax_t count[SYMBOLS_AMOUNT];
     std::vector<size_t> count;
-    //std::map<char, size_t> count;
+    size_t LENGTH = 0;
 
 public:
     counter();
-    void add(char const c);
-    void add(std::vector<char> const &);
-    size_t get_count(char const);
-    std::multimap<size_t, unsigned char> get();
+    void add(unsigned char const c);
+    void add(std::vector<unsigned char> const &);
+    size_t get_count(unsigned char const);
+    std::multimap<size_t, size_t> get();
+    inline size_t get_total_amount() { return LENGTH; }
 };
 
 #endif // COUNTER_H

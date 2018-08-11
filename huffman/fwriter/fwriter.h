@@ -7,19 +7,20 @@
 
 class  fwriter {
 private:
-    static constexpr size_t BUF_SIZE = 4096;
+    static constexpr size_t BUF_SIZE = 1024;
+    static constexpr size_t CHAR_SIZE = 8;
     std::ofstream writer;
-    std::string fname; // will I need it?
-    char buffer[BUF_SIZE];
-    size_t cur_index;
+    unsigned char current;
     size_t bit_index;
 
 public:
     fwriter(std::string const &filename);
     ~fwriter();
 
-    void put(char const);
-    void put(std::vector<bool> const);
+    template <typename T>
+    inline void put(T x) { writer << x; }
+
+    void put(std::vector<bool>);
 };
 
 #endif // FWRITER_H
