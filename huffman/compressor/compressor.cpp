@@ -1,5 +1,4 @@
 #include "compressor.h"
-
 #include "../counter/counter.h"
 
 using std::pair;
@@ -7,108 +6,123 @@ using std::vector;
 using std::map;
 using std::multimap;
 
-compressor::compressor(freader & in) {
+compressor::compressor(freader & in) : codes(SYMBOLS_AMOUNT) {
     counter cnt;
     while (!in.eof()) {
         cnt.add(in.get_chunk());
     }
-    *this = compressor(cnt.get());
+    count = cnt.get();
+    SYMBOLS_COUNT = count.size();
     LENGTH = cnt.get_total_amount();
-    in.reset();
 }
 
-compressor::compressor(multimap<size_t, size_t> count_) {
-    tree.reserve(count_.size());
-    for (auto x: count_) {
-        tree.push_back(std::shared_ptr<node<size_t> >(new node<size_t>(x.second)));
-        count.insert(pair<size_t, node<size_t> *>(x.first, tree.back().get()));
+compressor::compressor(std::multimap<size_t, size_t> const & count_)
+    : LENGTH(0), SYMBOLS_COUNT(count_.size()), codes(SYMBOLS_AMOUNT), count(count_){ }
+
+void compressor::prepare_queue(std::vector<std::shared_ptr<node<size_t> > > & tree,
+                               std::multimap<size_t, node<size_t> *> & queue) {
+    if (count.size() > 1) {
+        tree.reserve(SYMBOLS_COUNT * 2 - 1);
+        for (auto x: count) {
+            tree.push_back(std::shared_ptr<node<size_t> >(new node<size_t>(x.second)));
+            queue.insert(pair<size_t, node<size_t> *>(x.first, tree.back().get()));
+        }
     }
-    encode();
 }
 
-void compressor::build_tree() {
+void compressor::build_tree(std::vector<std::shared_ptr<node<size_t> > > & tree,
+                            std::multimap<size_t, node<size_t> *> & queue) {
     size_t const NEUTRAL_NODE_VALUE = SYMBOLS_AMOUNT;
     size_t new_weight = 0;
     node<size_t> * ch[2];
     multimap<size_t, node<size_t> *>::iterator cur;
-    while (count.size() > 1) {
-        cur = count.begin();
+    std::shared_ptr<node<size_t> > last_node;
+
+    while (queue.size() > 1) {
+        cur = queue.begin();
         new_weight = cur->first;
         ch[0] = cur->second;
-        count.erase(cur);
+        queue.erase(cur);
 
-        cur = count.begin();
+        cur = queue.begin();
         new_weight += cur->first;
         ch[1] = cur->second;
-        count.erase(cur);
+        queue.erase(cur);
 
-        tree.push_back(std::shared_ptr<node<size_t> >(new node<size_t>(NEUTRAL_NODE_VALUE, nullptr, ch[0], ch[1])));
-        count.insert(pair<size_t, node<size_t> *>(new_weight, tree.back().get()));
-        ch[0]->set_parent(tree.back().get());
-        ch[1]->set_parent(tree.back().get());
+        last_node.reset(new node<size_t>(NEUTRAL_NODE_VALUE, nullptr, ch[0], ch[1]));
+        tree.push_back(last_node);
+        queue.insert(pair<size_t, node<size_t> *>(new_weight, last_node.get()));
+        ch[0]->set_parent(last_node.get());
+        ch[1]->set_parent(last_node.get());
     }
 }
 
 void compressor::encode_dfs(const node<size_t> * current, std::vector<bool> & code) {
-    if (current->get_left_child()) {
+    node<size_t> * child = current->get_left_child();
+    if (child) {
         code.push_back(0);
-        encode_dfs(current->get_left_child(), code);
+        encode_dfs(child, code);
     }
 
-    if (current->get_right_child()) {
+    child = current->get_right_child();
+    if (child) {
         code.push_back(1);
-        encode_dfs(current->get_right_child(), code);
+        encode_dfs(child, code);
     }
 
     if (current->get_value() < SYMBOLS_AMOUNT) {
-        table.insert(pair<unsigned char, std::vector<bool>>(static_cast<unsigned char>(current->get_value()), code));
+        codes.at(current->get_value()) = code;
     }
 
     if (code.size()) {
-        MAX_CODE_LENGTH = std::max(code.size(), MAX_CODE_LENGTH);
         code.pop_back();
     }
 }
 
-void compressor::print(freader & in, fwriter & out) {
+void compressor::encode() {
+    std::multimap<size_t, node<size_t> *> queue;
+    std::vector<std::shared_ptr<node<size_t> > > tree;
+
+    prepare_queue(tree, queue);
+    build_tree(tree, queue);
+    std::vector<bool> code;
+    if (tree.size()) {
+        encode_dfs(tree.back().get(), code);
+    }
+}
+
+void compressor::print(freader & in, fwriter & out) {    
+    encode();
+    in.reset();
+    // Write navigative numbers
     out.put<size_t>(LENGTH);
-    out.put<char>('\n');
-    out.put<size_t>(table.size());
-    out.put<char>('\n');
-    out.put<size_t>(MAX_CODE_LENGTH);
-    out.put<char>('\n');
+    out.put<size_t>(SYMBOLS_COUNT);
 
-    map<std::vector<bool>, unsigned char> reversed_table;
+    if (SYMBOLS_COUNT > 1) {
+        // Write the count table
+        for (auto x: count) {
+            out.put<size_t>(x.second);
+            out.put<size_t>(x.first);
+        }
 
-    for(map<unsigned char, std::vector<bool>>::iterator it = table.begin(); it != table.end(); ++it) {
-        reversed_table.insert(pair<std::vector<bool>, unsigned char>(resized_bool_vector(it->second, MAX_CODE_LENGTH),
-                                                                     it->first));
+        // Write encoded message
+        while (!in.eof()) {
+            out.put(get_code(in.get<unsigned char>()));
+        }
+    } else {
+        while (!in.eof()) {
+            out.put(in.get<unsigned char>());
+        }
     }
 
-    out.put<size_t>(table.find(reversed_table.rbegin()->second)->second.size());
-
-    for(map<std::vector<bool>, unsigned char>::iterator it = reversed_table.begin(); it != reversed_table.end(); ++it) {
-        out.put(it->second);
-    }
-
-    for(map<std::vector<bool>, unsigned char>::iterator it = reversed_table.begin(); it != reversed_table.end(); ++it) {
-        out.put(it->first);
-    }
-
-    while (!in.eof()) {
-        out.put(get_code(in.get_char()));
-    }
 }
 
-std::vector<bool> resized_bool_vector(std::vector<bool> const & x, size_t length) {
-    std::vector<bool> result = x;
-    result.resize(length);
-    return result;
+std::vector<std::shared_ptr<node<size_t> > > compressor::get_tree() {
+    std::multimap<size_t, node<size_t> *> queue;
+    std::vector<std::shared_ptr<node<size_t> > > tree;
+
+    prepare_queue(tree, queue);
+    build_tree(tree, queue);
+    return tree;
 }
 
-std::vector<bool> & compressor::get_code(unsigned char c) {
-    if (table.find(c) != table.end()) {
-        return table.find(c)->second;
-    }
-    throw std::runtime_error("don't have a code for" + std::string(1, static_cast<char>(c)));
-}

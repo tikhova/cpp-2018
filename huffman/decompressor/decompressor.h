@@ -3,21 +3,21 @@
 
 #include "../freader/freader.h"
 #include "../fwriter/fwriter.h"
+#include "../node/node.h"
 #include <vector>
 #include <map>
+#include <memory> // shared_ptr
 
 class decompressor {
 private:
+    static constexpr size_t SYMBOLS_AMOUNT = 256;
     size_t SYMBOLS_COUNT;
-    size_t BITS_COUNT;
     size_t LENGTH;
-    std::map<std::vector<bool>, unsigned char> table;
+    std::vector<std::shared_ptr<node<size_t> > > tree;
 
 public:
     decompressor(freader &);
     void print(freader &, fwriter &);
 };
-
-size_t matching_length(std::vector<bool>, std::vector<bool>);
 
 #endif // DECOMPRESSOR_H

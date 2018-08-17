@@ -7,9 +7,9 @@ using std::pair;
 using std::vector;
 using std::multimap;
 
-counter::counter() : count(SYMBOLS_AMOUNT, 0){}
+counter::counter() : count(SYMBOLS_AMOUNT, 0) {}
 
-void counter::add(unsigned char const c) {
+void counter::add(unsigned char const & c) {
     ++count.at(c);
     ++LENGTH;
 }
@@ -18,10 +18,6 @@ void counter::add(vector<unsigned char> const & a) {
     for (auto c: a) {
         add(c);
     }
-}
-
-size_t counter::get_count(unsigned char const c) {
-    return count.at(c);
 }
 
 multimap<size_t, size_t> counter::get() {

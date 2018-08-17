@@ -14,10 +14,12 @@ private:
 
 public:
     counter();
-    void add(unsigned char const c);
+
+    void add(unsigned char const & c);
     void add(std::vector<unsigned char> const &);
-    size_t get_count(unsigned char const);
+
     std::multimap<size_t, size_t> get();
+    inline size_t get_count(unsigned char const & c) { return count.at(c); }
     inline size_t get_total_amount() { return LENGTH; }
 };
 

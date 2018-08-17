@@ -5,13 +5,16 @@
 #include <string>
 #include <fstream>
 #include <vector>
+#include <cstring>
+#include <iostream>
+#include <climits>
 
 class freader {
 private:
-    static constexpr size_t BUF_SIZE = 1024;
-    static constexpr size_t CHAR_SIZE = 8;
+    static constexpr size_t BUFFER_SIZE = 1024 * 1024;
+    static constexpr size_t CHAR_SIZE = CHAR_BIT;
     std::ifstream reader;
-    unsigned char buffer[BUF_SIZE];
+    unsigned char buffer[BUFFER_SIZE];
     size_t bit_index;
     size_t cur_index;
     size_t end_index;
@@ -23,15 +26,31 @@ public:
     ~freader();
 
     template <typename T>
-    inline T get() { T x; reader >> x; return x; }
+    T get() {
+        T result;
+        size_t const T_SIZE = sizeof(T);
+        size_t buffer_size = end_index - cur_index;
+        if (buffer_size >= T_SIZE) {
+            std::memcpy(&result, buffer + cur_index, T_SIZE);
+            cur_index += T_SIZE;
+        } else {
+            std::memcpy(&result, buffer + cur_index, buffer_size);
+            read_chunk();
+            if (end_index < T_SIZE - buffer_size) {
+                throw std::runtime_error("could not read from source");
+            }
+            std::memcpy(&result + buffer_size, buffer, T_SIZE - buffer_size);
+            cur_index += T_SIZE - buffer_size;
+        }
+        return result;
+    }
 
     bool get_bit();
-    unsigned char get_char();
     std::vector<bool> get_bool_vector(size_t);
     std::vector<unsigned char> get_chunk();
 
-    bool eof();
-    void reset() { reader.clear(); reader.seekg(0); cur_index = end_index = bit_index = 0; }
+    void reset();
+    inline bool eof() { return reader.eof() && (cur_index == end_index); }
     inline void skipws(bool state) { reader >> (state ? std::skipws : std::noskipws); }
 };
 

@@ -1,52 +1,39 @@
 #include "decompressor.h"
+#include "../compressor/compressor.h"
 
 decompressor::decompressor(freader & in) {
+    // Read navigative numbers
     LENGTH = in.get<size_t>();
-    SYMBOLS_COUNT = in.get<size_t>();
-    BITS_COUNT = in.get<size_t>();
-    size_t last_length = in.get<size_t>();
+    SYMBOLS_COUNT = in.get<size_t>();    
 
-    std::vector<unsigned char> characters;
-    characters.reserve(SYMBOLS_COUNT);
-    std::vector<bool> previous;
-    std::vector<bool> current;
-    size_t cur_length = 0;
+    if (SYMBOLS_COUNT > 1) {
+        std::multimap<size_t, size_t> count;
 
-    in.skipws(false);
-    for (size_t i = 0; i != SYMBOLS_COUNT; ++i) {
-        characters.push_back(in.get<unsigned char>());
+        // Read the count table
+        for (size_t i = 0; i != SYMBOLS_COUNT; ++i) {
+            count.insert(std::pair<size_t, size_t>(in.get<size_t>(), in.get<size_t>()));
+        }
+
+        tree = compressor(count).get_tree();
     }
-
-    previous = in.get_bool_vector(BITS_COUNT);
-    for (size_t i = 1; i != SYMBOLS_COUNT; ++i) {
-        current = in.get_bool_vector(BITS_COUNT);
-        cur_length = BITS_COUNT - matching_length(previous, current);
-        swap(previous, current);
-        current.resize(cur_length);
-        table.insert(std::pair<std::vector<bool>, unsigned char>(current, characters.at(i - 1)));
-    }
-
-    previous.resize(last_length);
-    table.insert(std::pair<std::vector<bool>, unsigned char>(previous, characters.back()));
-}
-
-size_t matching_length(std::vector<bool> first, std::vector<bool> second) {
-    size_t result = 0;
-    size_t first_length = first.size();
-    size_t second_length = second.size();
-    for (; first_length-- != 0 && second_length-- != 0 &&
-         first.at(first_length) == second.at(second_length); ++result);
-    return result;
 }
 
 void decompressor::print(freader & in, fwriter & out) {
-    std::vector<bool> current;
-    while (!in.eof() && LENGTH) {
-        current.push_back(in.get_bit());
-        if (table.find(current) != table.end()) {
-            out.put(table.find(current)->second);
-            current.clear();
-            --LENGTH;
+    if (SYMBOLS_COUNT > 1) {
+        node<size_t> * current = tree.back().get();
+        bool bit;
+        while (LENGTH) {
+            bit = in.get_bit();
+            current = bit ? current->get_right_child() : current->get_left_child();
+            if (current->get_value() < SYMBOLS_AMOUNT) {
+                out.put<unsigned char>(static_cast<unsigned char>(current->get_value()));
+                current = tree.back().get();
+                --LENGTH;
+            }
+        }
+    } else {
+        while (!in.eof()) {
+            out.put(in.get<unsigned char>());
         }
     }
 }
