@@ -27,10 +27,14 @@ big_integer::big_integer(int const number) {
     if (number == 0) {
         sign = 0;
         value.push_back(0);
+    } else if (number > 0) {
+        sign = 1;
+        value.push_back(static_cast<unsigned int>(number));
     } else {
-        sign = number > 0 ? 1 : -1;
-        value.push_back(std::abs(number));
+        sign = -1;
+        value.push_back(-static_cast<unsigned int>(number));
     }
+
 }
 
 big_integer::big_integer(string const & str): big_integer() {
@@ -274,7 +278,6 @@ big_integer& big_integer::operator<<=(unsigned int n) {
         return *this;
     }
 
-    optimized_vector result;
     size_t full_blocks = 0;
     unsigned int shift = n;
 
@@ -290,16 +293,15 @@ big_integer& big_integer::operator<<=(unsigned int n) {
     digit_t d = 0; // current digit
     size_t size = value.size();
 
-    for (size_t i = 0; i != full_blocks; ++i) { // insert end zeroes
-        result.push_back(0);
-    }
+
+    optimized_vector result(full_blocks + size, 0);
 
     for (size_t i = 0; i < size; ++i) {
         d = value[i] & rest_mask;                  // value[i] low (BITS_AMOUNT - shift) digits
         d = (d << shift) | carry;                  // add carry from previous digit
         carry = ((double_digit_t)value[i]) >>      // value[i] high shift digits
                     (BITS_AMOUNT - shift);
-        result.push_back(d);
+        result[full_blocks + i] = d;
     }
     this->value = result;
 
@@ -434,7 +436,7 @@ digit_t stodt(string str) {
 // summates x, y and carry
 // puts the result to x, new carry to carry
 void add_with_carry(digit_t& x, digit_t const & y, digit_t& carry) {
-    double_digit_t sum = (double_digit_t)x + (double_digit_t)y + (double_digit_t)carry;
+    double_digit_t sum = (double_digit_t)x + y + carry;
     x = low(sum);
     carry = high(sum);
 }
@@ -445,7 +447,6 @@ void sub_with_carry(digit_t& x, digit_t const & y, digit_t& carry) {
     double_digit_t t = x;
     double_digit_t sub = y + carry;
     if (sub > t) {
-        t += big_integer::BITS_BASE;
         carry = 1;
     } else {
         carry = 0;
@@ -515,9 +516,7 @@ void sub_value(big_integer& result, big_integer const & x, big_integer const & y
 }
 
 void mul_value(big_integer& result, big_integer const & x, big_integer const & y) {
-    big_integer res = 0;
-    res.sign = x.sign;
-    res.value.resize(x.value.size() + y.value.size() + 2, 0);
+    optimized_vector res_value(x.value.size() + y.value.size() + 2, 0);
     double_digit_t d;
     digit_t carry = 0;
     size_t n = x.value.size();
@@ -526,14 +525,15 @@ void mul_value(big_integer& result, big_integer const & x, big_integer const & y
     for (size_t i = 0; i != n; ++i) {
         carry = 0;
         for (size_t j = 0; j != m; ++j) {
-            d = (double_digit_t)x.value[i] * (double_digit_t)y.value[j] + carry + res.value[i + j];
-            res.value[i + j] = low(d);
+            d = (double_digit_t)x.value[i] * y.value[j] + carry + res_value[i + j];
+            res_value[i + j] = low(d);
             carry = high(d);
         }
-        res.value[i + m] += carry;
+        res_value[i + m] += carry;
     }
-    normalize(res);
-    result = res;
+    result.sign = x.sign;
+    result.value = res_value;
+    normalize(result);
 }
 
 void div_value_with_digit(big_integer& result, big_integer const & x, digit_t const & y, digit_t& carry) {
@@ -589,12 +589,12 @@ pair<big_integer, big_integer> div_value(big_integer const & x, big_integer cons
         }
     } else {
         digit_t scaling_factor = big_integer::BITS_BASE / (y.value.back() + 1);
-        big_integer r = x.sign * x * scaling_factor; // scaling x (remainder)
-        big_integer d = y.sign * y * scaling_factor; // scaling y (divider)
-        big_integer q;                               // quotient quotient
+        big_integer r = abs(x) * scaling_factor; // scaling x (remainder)
+        big_integer d = abs(y) * scaling_factor; // scaling y (divider)
+        big_integer q;                               // quotient
         digit_t qt;                                  // quotient trial digit
-        size_t n = r.value.size();                   // n - size of remainder
-        size_t m = d.value.size();                   // m - size of divider
+        size_t n = r.value.size();                   // n = size of remainder
+        size_t m = d.value.size();                   // m = size of divider
         big_integer dq;
 
         q.sign = x.sign;
@@ -624,8 +624,8 @@ pair<big_integer, big_integer> div_value(big_integer const & x, big_integer cons
 }
 
 //// Logic
-template <class F> // TO DO: Fix strange transform(?) usages
-big_integer big_integer::logic_operation(big_integer a, big_integer b, F lambda) { // TO DO: comment the shit out of it
+template <class F>
+big_integer big_integer::logic_operation(big_integer a, big_integer b, F bit_op) {
     optimized_vector temp;
 
     if (a.sign == -1) {
@@ -654,10 +654,10 @@ big_integer big_integer::logic_operation(big_integer a, big_integer b, F lambda)
         b.value.resize(a.value.size(), 0);
     }
 
-    a.sign = lambda(a.sign, b.sign);
+    a.sign = bit_op(a.sign, b.sign);
 
     for (size_t i = 0; i < a.value.size(); ++i) {
-        a.value[i] = lambda(a.value[i], b.value[i]);
+        a.value[i] = bit_op(a.value[i], b.value[i]);
     }
 
     if(a.sign == 1) {
@@ -671,10 +671,6 @@ big_integer big_integer::logic_operation(big_integer a, big_integer b, F lambda)
     }
 
     normalize(a);
-
-    if(a.value.back() == 0) {
-        a.sign = 0;
-    }
 
     return a;
 }

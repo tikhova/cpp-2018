@@ -7,7 +7,7 @@
 #include <cstdint> // limits of int types
 #include <limits>  // numeric_limits
 #include <cmath>   // pow
-#include "../../../optimized_vector/optimized_vector.h"
+#include "../optimized_vector/optimized_vector.h"
 
 class big_integer {
 private:
@@ -22,7 +22,7 @@ private:
         static constexpr int DIGITS_AMOUNT = std::numeric_limits<digit_t>::digits10;
         static constexpr digit_t MAX_DIGIT = std::numeric_limits<digit_t>::max();
         static constexpr digit_t DIGITS_BASE = pow(10, DIGITS_AMOUNT);
-        static constexpr double_digit_t BITS_BASE = (double_digit_t)1 << BITS_AMOUNT;
+        static constexpr double_digit_t BITS_BASE = static_cast<double_digit_t>(1) << BITS_AMOUNT;
 
         // Utilits
         friend int compare_abs_value(big_integer const &, big_integer const &);

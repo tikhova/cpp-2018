@@ -1,9 +1,9 @@
 #include <iostream>
-#include "../../freader/freader.h"
-#include "../../fwriter/fwriter.h"
-#include "../../counter/counter.h"
-#include "../../compressor/compressor.h"
-#include "../../decompressor/decompressor.h"
+#include "../freader/freader.h"
+#include "../fwriter/fwriter.h"
+#include "../counter/counter.h"
+#include "../compressor/compressor.h"
+#include "../decompressor/decompressor.h"
 #include <fstream>
 #include <algorithm>
 #include <climits>
@@ -43,12 +43,4 @@ int main(int argc, char **argv) {
     std::cerr << (type == COMPRESS ? "compression" : "decompression") << " took: "
                   << std::setprecision(3) << double(clock() - time) / CLOCKS_PER_SEC << "s."
                   << std::endl;
-
-//    std::string source_name = "big-file.tzt_hff";
-//    std::string destination_name = "decomp-big-file.tzt";
-//    freader source(source_name);
-//    fwriter destination(destination_name);
-//    decompressor decomp(source);
-//    decomp.print(source, destination);
-//    return 0;
 }

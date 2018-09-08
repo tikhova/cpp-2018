@@ -19,6 +19,7 @@ compressor::compressor(freader & in) : codes(SYMBOLS_AMOUNT) {
 compressor::compressor(std::multimap<size_t, size_t> const & count_)
     : LENGTH(0), SYMBOLS_COUNT(count_.size()), codes(SYMBOLS_AMOUNT), count(count_){ }
 
+// insert counted symbols into the queue
 void compressor::prepare_queue(std::vector<std::shared_ptr<node<size_t> > > & tree,
                                std::multimap<size_t, node<size_t> *> & queue) {
     if (count.size() > 1) {
@@ -57,6 +58,7 @@ void compressor::build_tree(std::vector<std::shared_ptr<node<size_t> > > & tree,
     }
 }
 
+// create a vector of codes (represented as bool vectors)
 void compressor::encode_dfs(const node<size_t> * current, std::vector<bool> & code) {
     node<size_t> * child = current->get_left_child();
     if (child) {
@@ -85,8 +87,8 @@ void compressor::encode() {
 
     prepare_queue(tree, queue);
     build_tree(tree, queue);
-    std::vector<bool> code;
     if (tree.size()) {
+        std::vector<bool> code;
         encode_dfs(tree.back().get(), code);
     }
 }
