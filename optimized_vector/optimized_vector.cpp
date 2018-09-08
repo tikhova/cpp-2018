@@ -4,9 +4,13 @@
 
 using value_type = uint_least32_t;
 
+void MyDeleter(value_type * ptr) {
+    delete[] ptr;
+}
+
 // Constructors and destructor
 
-optimized_vector::big_value::big_value(size_t capacity_, value_type* data_) : capacity(capacity_), data(data_) {}
+optimized_vector::big_value::big_value(size_t capacity_, value_type* data_) : capacity(capacity_), data(data_, MyDeleter) {}
 
 optimized_vector::big_value::big_value(big_value const & x) : capacity(x.capacity), data(x.data) {}
 
@@ -87,7 +91,7 @@ void optimized_vector::reserve(size_t const & n) {
         }
         new (&value_.big) big_value(n, temp);
     } else {
-        value_.big.data.reset(copy(value_.big, value_.big.capacity * 2));
+        value_.big.data.reset(copy(value_.big, value_.big.capacity * 2), MyDeleter);
         value_.big.capacity *= 2;
     }
 
@@ -128,7 +132,7 @@ optimized_vector & optimized_vector::operator=(optimized_vector const & x) noexc
 
 void optimized_vector::make_unique() {
     if (is_big() && !value_.big.data.unique()) {
-        value_.big.data.reset(copy(value_.big));
+        value_.big.data.reset(copy(value_.big), MyDeleter);
         data_ptr_ = value_.big.data.get();
     }
 }
