@@ -1,5 +1,5 @@
 #ifndef HUFFMAN
-#define HUFFMAN_COMPRESSIO
+#define HUFFMAN
 
 #include "../buffered_reader/buffered_reader.h"
 #include "../buffered_writer/buffered_writer.h"
