@@ -43,7 +43,6 @@ int main(int argc, char **argv) {
                 decode(in, out);
             }
             break;
-        default: return -1;
     }
     std::cout << (type == COMPRESS ? "Compression" : "Decompression") << " took: "
                   << std::setprecision(3) << double(clock() - time) / CLOCKS_PER_SEC << "s."
