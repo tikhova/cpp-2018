@@ -46,7 +46,7 @@ void build_tree(unsigned int counts[256], std::vector<node> &tree) {
         tree.push_back({NEUTRAL_NODE_VALUE, first.second, second.second});
         queue.push({first.first + second.first, n++});
     }
-    if (queue.size() > 0 && queue.top().first < 256) {
+    if (queue.size() > 0 && n == 1) {
         tree.push_back({NEUTRAL_NODE_VALUE, -1, second.second});
     }
 }
