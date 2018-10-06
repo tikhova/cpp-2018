@@ -18,7 +18,7 @@ public:
     fixed_vector() : size_(0) {}
 
     fixed_vector(fixed_vector const & other) {
-        copy_n(other.data, other.size_, this->data);
+        uninitialized_copy_n(other.data, other.size_, this->data);
         size_ = other.size_;
     }
 
@@ -127,6 +127,7 @@ public:
         assert(it >= this->begin() && it < this->end());
         iterator i = const_cast<iterator>(it);
         std::rotate(i, i + 1, end());
+        pop_back();
         --size_;
         return i;
     }
@@ -137,6 +138,9 @@ public:
         iterator second = const_cast<iterator>(end);
         std::rotate(first, second, this->end());
         size_ -= second - first;
+        for(size_t i = 0; i < second - first; ++i) {
+            pop_back();
+        }
         return first;
     }
 
@@ -148,7 +152,7 @@ public:
         return static_cast<iterator>(it);
     }
 
-    friend void swap(fixed_vector & a, fixed_vector & b) {
+    friend void swap(fixed_vector a, fixed_vector b) {
         std::swap(a, b);
     }
 
