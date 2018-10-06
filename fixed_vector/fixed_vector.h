@@ -11,6 +11,8 @@ class fixed_vector {
 public:
     typedef T* iterator ;
     typedef T const * const_iterator;
+    using reverse_iterator = std::reverse_iterator<iterator>;
+    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
     // Constructors & Destructor
     fixed_vector() : size_(0) {}
@@ -85,9 +87,30 @@ public:
         return reinterpret_cast<T const *>(data + size_);
     }
 
+    reverse_iterator rbegin() {
+        return reverse_iterator(end());
+    }
+    const_reverse_iterator rbegin() const {
+        return const_reverse_iterator(end());
+    }
+
+    reverse_iterator rend() {
+        return reverse_iterator(begin());
+    }
+    const_reverse_iterator rend() const {
+        return const_reverse_iterator(begin());
+    }
+
+    const_reverse_iterator crend() const {
+        return const_reverse_iterator(begin());
+    }
+    const_reverse_iterator crbegin() const {
+        return const_reverse_iterator(end());
+    }
+
     // Modification
 
-    void push_pack(T const & value) {
+    void push_back(T const & value) {
         new (data + size_++) T(value);
     }
 
@@ -96,8 +119,8 @@ public:
         --size_;
     }
 
-    void clean() {
-        this = fixed_vector();
+    void clear() {
+        erase(begin(), end());
     }
 
     iterator erase(const_iterator it) {
@@ -117,10 +140,11 @@ public:
         return first;
     }
 
-    iterator insert(const_iterator it, T const & val) {
+    iterator insert(const_iterator iter, T const & val) {
         assert(size_ + 1 <= N);
-        std::rotate(it, end() - 1, end());
-        *it = val;
+        iterator it = const_cast<iterator>(iter);
+        push_back(val);
+        std::rotate(it, std::max(it, end() - 1), end());
         return static_cast<iterator>(it);
     }
 
