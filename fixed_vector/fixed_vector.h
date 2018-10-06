@@ -148,7 +148,7 @@ public:
         return static_cast<iterator>(it);
     }
 
-    friend void swap(fixed_vector a, fixed_vector b) {
+    friend void swap(fixed_vector & a, fixed_vector & b) {
         std::swap(a, b);
     }
 
