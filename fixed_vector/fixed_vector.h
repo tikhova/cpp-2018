@@ -124,6 +124,9 @@ public:
         return static_cast<iterator>(it);
     }
 
+    friend void swap(fixed_vector a, fixed_vector b) {
+        std::swap(a, b);
+    }
 
 private:
     typename std::aligned_storage<sizeof(T), alignof(T)>::type data[N];
