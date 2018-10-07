@@ -128,7 +128,6 @@ public:
         iterator i = const_cast<iterator>(it);
         std::rotate(i, i + 1, end());
         pop_back();
-        --size_;
         return i;
     }
 
@@ -137,7 +136,6 @@ public:
         iterator first = const_cast<iterator>(begin);
         iterator second = const_cast<iterator>(end);
         std::rotate(first, second, this->end());
-        size_ -= second - first;
         for(size_t i = 0; i < second - first; ++i) {
             pop_back();
         }
